@@ -1,0 +1,138 @@
+# =============================================================
+# Figures of a Future Past — game config for the coordinatore bot.
+# Source manual: https://github.com/sirmmo/figures_of_a_future_past
+# Setting: Star Trek-derivative TTRPG, Iconian artefact discovered
+# in the Shackleton Expanse. Mensa Italia 2025.
+# =============================================================
+#
+# Differenza strutturale rispetto a Vespri/Genova: ogni fazione ha
+# TRE risorse separate (Quantum Data Points: Alpha = conoscenza,
+# Beta = potere/tecnologia, Gamma = risorse fisiche). Le scelte di
+# fine partita dipendono da quale tipo di QDP "domina" globalmente,
+# non da un punteggio unico aggregato.
+#
+# Schema: ogni Faction dichiara `resources: [...]`. Le bande di esito
+# specificano `resource: alpha|beta|gamma` per leggere la somma di
+# quella risorsa fra tutte le fazioni; la fascia "L'Artefatto Tace"
+# non specifica risorsa e usa il totale generale come fallback.
+
+id: figures-of-a-future-past
+name: "Figures of a Future Past"
+language: it
+description: >
+  TTRPG sci-fi multi-tavolo. 4 navi (Federazione, Romulano-Ferengi,
+  mineraria, militare) competono per decifrare un artefatto iconiano
+  nella regione di Shackleton. ~4h di gioco.
+
+factions:
+  - id: venture
+    label: "USS Venture (Federazione)"
+    resources:
+      - { id: alpha, label: "QDP Alpha (Conoscenza)", min: 0, max: 6 }
+      - { id: beta,  label: "QDP Beta (Potere)",      min: 0, max: 6 }
+      - { id: gamma, label: "QDP Gamma (Risorse)",    min: 0, max: 6 }
+  - id: thalassar
+    label: "RRW Thalassar (Romulano-Ferengi)"
+    resources:
+      - { id: alpha, label: "QDP Alpha (Conoscenza)", min: 0, max: 6 }
+      - { id: beta,  label: "QDP Beta (Potere)",      min: 0, max: 6 }
+      - { id: gamma, label: "QDP Gamma (Risorse)",    min: 0, max: 6 }
+  - id: halcyon
+    label: "SS Halcyon (Mineraria)"
+    resources:
+      - { id: alpha, label: "QDP Alpha (Conoscenza)", min: 0, max: 6 }
+      - { id: beta,  label: "QDP Beta (Potere)",      min: 0, max: 6 }
+      - { id: gamma, label: "QDP Gamma (Risorse)",    min: 0, max: 6 }
+  - id: ironclad
+    label: "HSS Ironclad (Militare)"
+    resources:
+      - { id: alpha, label: "QDP Alpha (Conoscenza)", min: 0, max: 6 }
+      - { id: beta,  label: "QDP Beta (Potere)",      min: 0, max: 6 }
+      - { id: gamma, label: "QDP Gamma (Risorse)",    min: 0, max: 6 }
+
+variants:
+  - id: full
+    label: "4 navi (canonico)"
+    active_factions: [venture, thalassar, halcyon, ironclad]
+    description: "Tutte le navi partecipano. Distribuzione iniziale dei QDP per nave: 2 punti totali (vedi manuale)."
+
+# Outcome bands ordered from most-specific (resource-keyed) to fallback
+# (overall total). First match wins; thresholds are GLOBAL sums.
+outcomes:
+  full:
+    - { resource: alpha, min: 8, max: 999, label: "L'Ascesa della Conoscenza",
+        description: "L'artefatto si apre alla nave/alleanza con la visione più scientifica. Tecnologia iconiana resa accessibile (con cautela) a chi ha compreso." }
+    - { resource: beta, min: 8, max: 999, label: "L'Età del Potere Iconiano",
+        description: "I portali si attivano. Una nuova era di potere comincia — e una nuova guerra fredda con essa." }
+    - { resource: gamma, min: 8, max: 999, label: "Fortezza Eterna",
+        description: "L'artefatto viene contenuto, neutralizzato, sigillato. Le fazioni militari ne escono rafforzate; la conoscenza resta sepolta." }
+    - { min: 0, max: 7, label: "L'Artefatto Tace",
+        description: "Nessuna fazione raggiunge la massa critica. L'artefatto si spegne; gli iconiani restano un enigma. Per ora." }
+
+moments:
+  - id: missioni_iniziali_finite
+    label: "Le prime comunicazioni tra navi"
+    suggested_minute: 60
+    description: >
+      Le missioni iniziali finiscono. Le navi cominciano a scambiarsi
+      frammenti di informazioni sull'anomalia. Da qui in poi è possibile
+      il teletrasporto internavale.
+    per_faction_text:
+      venture: "Avete decifrato un primo strato del segnale iconiano. Vale la pena condividerlo?"
+      thalassar: "I vostri sensori hanno tracciato attività anomala sulle altre navi. Sospettoso."
+      halcyon: "Europa Nova segnala fluttuazioni. Avete bisogno di aiuto, ma a quale prezzo?"
+      ironclad: "L'analisi tattica indica una minaccia crescente. Comunicare = mostrare debolezza?"
+
+  - id: svolta
+    label: "La Svolta — il portale si attiva parzialmente"
+    suggested_minute: 150
+    description: >
+      L'anomalia si intensifica. Un portale iconiano si attiva parzialmente,
+      minacciando un pianeta chiave della Shackleton Expanse. Le navi
+      devono cooperare per decifrare i segnali — o vedere il portale esplodere.
+    per_faction_text:
+      venture: "Avete i protocolli per stabilizzarlo, se le altre navi cooperano. Negoziate o agite."
+      thalassar: "Potete dirottare l'energia. Sarebbe un vantaggio strategico enorme. È anche un atto ostile."
+      halcyon: "Europa Nova è in linea di tiro. Salvarla potrebbe costarvi tutti i vostri QDP."
+      ironclad: "Avete il fuoco per distruggerlo. Ma distruggere significa rinunciare a tutto ciò che potreste imparare."
+
+  - id: scelta_finale
+    label: "La scelta finale — stabilizzare, distruggere o attivare"
+    suggested_minute: 225
+    description: >
+      Il momento ultimo. L'artefatto valuta quale fazione ha la visione
+      più compatibile con gli ideali iconiani. Ogni nave dichiara la
+      sua scelta finale; le manifestazioni iconiane reagiscono.
+    per_faction_text:
+      venture: "Aprire il portale alla conoscenza. Tutti gli archivi iconiani, accessibili all'umanità."
+      thalassar: "Sequestrarlo. Il vantaggio per Romulus, per i Ferengi, vale ogni costo."
+      halcyon: "Stabilizzarlo. Vivere accanto al mistero senza distruggerlo né dominarlo."
+      ironclad: "Sigillarlo. Quello che gli iconiani hanno lasciato non è dono — è arma."
+
+custom_commands:
+  - command: teletrasporto
+    label: "Teletrasporto internavale (costa 3 QDP totali)"
+    description: >
+      Una nave teletrasporta personale/cargo verso un'altra nave.
+      Costo base: 3 QDP (qualunque combinazione di Alpha/Beta/Gamma).
+      Risoluzione: 2d6 + modificatori (+1 per QDP Alpha speso/stabilità,
+      +1 se nave bersaglio cooperativa, -1 per interferenza, -1 se scudi
+      attivi). Il GM aggiorna i QDP con /score di conseguenza.
+
+  - command: manifestazione
+    label: "Manifestazione iconiana (effetto narrativo)"
+    description: >
+      Il GM coordinatore segnala una manifestazione iconiana al tavolo:
+      sensoriale (echi psionici, distorsioni temporali), fisica
+      (cristallizzazioni, proiezioni cartografiche), tecnologica
+      (interferenze, sincronizzazioni quantiche forzate), o narrativa
+      (frammenti di storia iconiana, spettri). Niente meccanica: solo
+      ambient. Utile quando il tavolo è bloccato.
+
+  - command: codice
+    label: "La Chiave Frammentata (collaborazione richiesta)"
+    description: >
+      Ogni nave possiede un quarto del codice di attivazione iconiano.
+      Combinare tutti e quattro i frammenti richiede coordinamento
+      esplicito fra i 4 tavoli. Il bot non valida niente: serve solo
+      come segnale che una nave sta condividendo il proprio frammento.

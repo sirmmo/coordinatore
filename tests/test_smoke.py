@@ -95,7 +95,14 @@ def test_session_round_trip(tmp_path):
     # Reload from DB, verify the state survived.
     row2 = storage.active_for_chat(42)
     s2 = Session.from_row(row2, cfg)
-    assert s2.scores == {"congiurati": 3, "baroni": 0, "clero": 4, "popolo": 0}
+    # Scores are nested per-resource. Single-resource factions
+    # (Vespri/Genova) get the synthesised "score" resource.
+    assert s2.scores == {
+        "congiurati": {"score": 3},
+        "baroni": {"score": 0},
+        "clero": {"score": 4},
+        "popolo": {"score": 0},
+    }
     assert s2.total() == 7
     assert s2.outcome().label == "La Scintilla Spenta"
     assert s2.masters[1].faction_id == "congiurati"
@@ -156,3 +163,66 @@ def test_make_storage_returns_libsql_for_libsql_urls():
 def test_make_storage_rejects_unknown_scheme():
     with pytest.raises(ValueError, match="unknown storage URL scheme"):
         make_storage("redis://nope")
+
+
+# ---------- multi-resource (FOFP-style) ----------
+
+
+def test_figures_config_loads_multi_resource():
+    cfg = load_game(GAMES_DIR / "figures-of-a-future-past.yaml")
+    assert cfg.id == "figures-of-a-future-past"
+    venture = cfg.faction("venture")
+    assert not venture.is_single_resource
+    res_ids = {r.id for r in venture.resolved_resources}
+    assert res_ids == {"alpha", "beta", "gamma"}
+
+
+def test_multi_resource_set_score_requires_resource(tmp_path):
+    cfg = load_game(GAMES_DIR / "figures-of-a-future-past.yaml")
+    storage = SqliteStorage(tmp_path / "test.sqlite")
+    storage.create_session(
+        chat_id=1, game_id=cfg.id, variant_id="full",
+        initial_state=Session.initial_state(cfg, "full"),
+    )
+    s = Session.from_row(storage.active_for_chat(1), cfg)
+
+    # Multi-resource faction: must specify resource.
+    with pytest.raises(ValueError, match="multiple resources"):
+        s.set_score("venture", 3)
+
+    # Specifying the resource works. Initial state is all resources at min;
+    # the manual's "starting QDP distribution" is set by the coordinator
+    # via /score after /begin, not via the schema's min.
+    s.set_score("venture", 3, resource_id="alpha")
+    assert s.scores["venture"] == {"alpha": 3, "beta": 0, "gamma": 0}
+
+
+def test_resource_keyed_outcome_band(tmp_path):
+    cfg = load_game(GAMES_DIR / "figures-of-a-future-past.yaml")
+    storage = SqliteStorage(tmp_path / "test.sqlite")
+    storage.create_session(
+        chat_id=1, game_id=cfg.id, variant_id="full",
+        initial_state=Session.initial_state(cfg, "full"),
+    )
+    s = Session.from_row(storage.active_for_chat(1), cfg)
+
+    # Drive global Alpha sum past the threshold (≥ 8).
+    s.set_score("venture", 6, resource_id="alpha")
+    s.set_score("halcyon", 3, resource_id="alpha")  # global alpha = 9 ≥ 8
+    outcome = s.outcome()
+    assert outcome is not None
+    assert outcome.label == "L'Ascesa della Conoscenza"
+
+
+def test_vespri_still_single_resource_after_refactor(tmp_path):
+    """Backward-compat smoke: old single-resource configs unchanged."""
+    cfg = load_game(VESPRI_PATH)
+    storage = SqliteStorage(tmp_path / "test.sqlite")
+    storage.create_session(
+        chat_id=1, game_id=cfg.id, variant_id="full",
+        initial_state=Session.initial_state(cfg, "full"),
+    )
+    s = Session.from_row(storage.active_for_chat(1), cfg)
+    # Legacy 2-arg form still works.
+    s.set_score("congiurati", 4)
+    assert s.scores["congiurati"]["score"] == 4

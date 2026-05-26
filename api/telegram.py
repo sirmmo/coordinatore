@@ -161,10 +161,18 @@ async def session_snapshot(chat_id: int, since: int = -1) -> dict:
             "id": s.variant_id,
             "label": variant.label,
             "active_factions": [
-                {"id": fid, "label": s.config.faction(fid).label}
+                {
+                    "id": fid,
+                    "label": s.config.faction(fid).label,
+                    "resources": [
+                        {"id": r.id, "label": r.label, "min": r.min, "max": r.max}
+                        for r in s.config.faction(fid).resolved_resources
+                    ],
+                }
                 for fid in variant.active_factions
             ],
         },
+        # Nested: {faction_id: {resource_id: value}}.
         "scores": s.scores,
         "total": s.total(),
         "max_total": s.config.max_total(s.variant_id),

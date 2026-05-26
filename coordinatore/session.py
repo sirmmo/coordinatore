@@ -1,8 +1,13 @@
 """Session state and the small bit of business logic that operates on it.
 
 A Session bundles a loaded GameConfig with the mutable per-session state
-(scores, masters, log). Handlers in `commands/` instantiate one from the
+(scores, masters, log). Handlers in `handlers.py` instantiate one from the
 DB row, mutate it, then save it back.
+
+Scores are stored nested per ``(faction_id, resource_id) -> value``:
+single-resource factions (Vespri / Genova) still have one entry per faction
+keyed under the synthesised resource name ``"score"``; multi-resource
+factions (FOFP) have an entry per declared resource.
 """
 
 from __future__ import annotations
@@ -31,7 +36,8 @@ class Session:
     variant_id: str
     status: str = "opening"  # opening | running | ended
     started_at: float | None = None
-    scores: dict[str, int] = field(default_factory=dict)
+    # Nested: {faction_id: {resource_id: value}}.
+    scores: dict[str, dict[str, int]] = field(default_factory=dict)
     masters: dict[int, Master] = field(default_factory=dict)
     log: list[dict[str, Any]] = field(default_factory=list)
 
@@ -40,12 +46,24 @@ class Session:
     @classmethod
     def initial_state(cls, config: GameConfig, variant_id: str) -> dict:
         variant = config.variant(variant_id)
-        scores = {fid: config.faction(fid).score_min for fid in variant.active_factions}
+        scores: dict[str, dict[str, int]] = {}
+        for fid in variant.active_factions:
+            f = config.faction(fid)
+            scores[fid] = {r.id: r.min for r in f.resolved_resources}
         return {"scores": scores, "masters": {}, "log": []}
 
     @classmethod
     def from_row(cls, row: dict, config: GameConfig) -> Session:
         state = row["state"]
+        raw_scores = state.get("scores", {})
+        # Tolerate legacy flat-dict shape from earlier sessions:
+        #   {faction: int}  ->  {faction: {"score": int}}
+        scores: dict[str, dict[str, int]] = {}
+        for fid, val in raw_scores.items():
+            if isinstance(val, dict):
+                scores[fid] = dict(val)
+            else:
+                scores[fid] = {"score": int(val)}
         return cls(
             id=row["id"],
             chat_id=row["chat_id"],
@@ -53,7 +71,7 @@ class Session:
             variant_id=row["variant_id"],
             status=row["status"],
             started_at=row.get("started_at"),
-            scores=dict(state.get("scores", {})),
+            scores=scores,
             masters={
                 int(uid): Master(**m) for uid, m in state.get("masters", {}).items()
             },
@@ -100,20 +118,49 @@ class Session:
         self._record("join", user_id=user_id, faction=faction_id)
         return master
 
-    def set_score(self, faction_id: str, value: int) -> None:
+    def set_score(
+        self, faction_id: str, value: int, resource_id: str | None = None
+    ) -> None:
+        """Set a faction's score.
+
+        For a single-resource faction (Vespri/Genova) ``resource_id`` can be
+        omitted; it defaults to the only resource. For multi-resource factions
+        (FOFP), pass the resource explicitly.
+        """
         if faction_id not in self.scores:
             raise ValueError(f"faction {faction_id!r} not active in this variant")
         f = self.config.faction(faction_id)
-        if not (f.score_min <= value <= f.score_max):
-            raise ValueError(f"score must be {f.score_min}..{f.score_max}")
-        self.scores[faction_id] = value
-        self._record("score", faction=faction_id, value=value)
+        if resource_id is None:
+            if not f.is_single_resource:
+                raise ValueError(
+                    f"faction {faction_id!r} has multiple resources "
+                    f"({', '.join(r.id for r in f.resolved_resources)}); "
+                    f"specify which one to set"
+                )
+            resource_id = f.resolved_resources[0].id
+        r = f.resource(resource_id)  # raises if unknown
+        if not (r.min <= value <= r.max):
+            raise ValueError(
+                f"resource {resource_id!r} of {faction_id!r} must be {r.min}..{r.max}"
+            )
+        self.scores[faction_id][resource_id] = value
+        self._record("score", faction=faction_id, resource=resource_id, value=value)
 
-    def total(self) -> int:
-        return sum(self.scores.values())
+    def total(self, resource_id: str | None = None) -> int:
+        """Sum of scores across factions. With ``resource_id`` set, sum only
+        that resource's values (factions without it contribute 0)."""
+        total = 0
+        for per_resource in self.scores.values():
+            if resource_id is None:
+                total += sum(per_resource.values())
+            else:
+                total += per_resource.get(resource_id, 0)
+        return total
 
     def outcome(self):
-        return self.config.outcome_for(self.variant_id, self.total())
+        return self.config.outcome_for(
+            self.variant_id, self.total(), scores=self.scores
+        )
 
     def fire_moment(self, moment_id: str) -> None:
         self.config.moment(moment_id)
@@ -157,10 +204,17 @@ class Session:
         ]
         for fid in variant.active_factions:
             f = self.config.faction(fid)
-            score = self.scores.get(fid, f.score_min)
             owner = self._master_for_faction(fid)
             owner_tag = f" — @{owner.username}" if owner else ""
-            lines.append(f"  • {f.label}: *{score}/{f.score_max}*{owner_tag}")
+            if f.is_single_resource:
+                r = f.resolved_resources[0]
+                score = self.scores.get(fid, {}).get(r.id, r.min)
+                lines.append(f"  • {f.label}: *{score}/{r.max}*{owner_tag}")
+            else:
+                lines.append(f"  • {f.label}{owner_tag}")
+                for r in f.resolved_resources:
+                    score = self.scores.get(fid, {}).get(r.id, r.min)
+                    lines.append(f"      ↳ {r.label}: *{score}/{r.max}*")
         total = self.total()
         max_total = self.config.max_total(self.variant_id)
         outcome = self.outcome()

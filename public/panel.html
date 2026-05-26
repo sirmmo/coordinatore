@@ -108,8 +108,22 @@
       font-family: "Cinzel", Georgia, serif;
       color: var(--oro);
     }
-    .faction .max { color: var(--grigionote); font-size: 1rem; }
-    .faction .master { font-size: 0.8rem; color: var(--grigionote); font-style: italic; }
+    .faction .max { color: var(--grigionote); font-size: 0.9rem; }
+    .faction .master { font-size: 0.8rem; color: var(--grigionote); font-style: italic; margin-top: 0.3rem; }
+    .faction .multi-res { display: flex; flex-direction: column; gap: 0.2rem; margin-top: 0.3rem; }
+    .faction .res-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 0.85rem;
+    }
+    .faction .res-label { color: var(--grigionote); }
+    .faction .res-score {
+      font-family: "Cinzel", Georgia, serif;
+      font-weight: bold;
+      color: var(--oro);
+      font-size: 1.1rem;
+    }
 
     .totals {
       background: var(--pergamena);
@@ -332,12 +346,25 @@
     scoresEl.innerHTML = "";
     for (const f of st.variant.active_factions) {
       const master = st.masters.find((m) => m.faction_id === f.id);
-      const score = st.scores[f.id] ?? 0;
+      const perResource = st.scores[f.id] || {};
       const card = document.createElement("div");
       card.className = "faction";
+      const resources = f.resources || [{ id: "score", label: "score", min: 0, max: 4 }];
+      const isSingle = resources.length === 1;
+      let body;
+      if (isSingle) {
+        const r = resources[0];
+        const v = perResource[r.id] ?? r.min;
+        body = `<div><span class="score">${v}</span><span class="max"> / ${r.max}</span></div>`;
+      } else {
+        body = '<div class="multi-res">' + resources.map((r) => {
+          const v = perResource[r.id] ?? r.min;
+          return `<div class="res-row"><span class="res-label">${escapeHtml(r.label)}</span><span class="res-score">${v}<span class="max">/${r.max}</span></span></div>`;
+        }).join("") + "</div>";
+      }
       card.innerHTML = `
         <h3>${escapeHtml(f.label)}</h3>
-        <div><span class="score">${score}</span><span class="max"> / 4</span></div>
+        ${body}
         <div class="master">${master ? "@" + escapeHtml(master.username) : "—"}</div>
       `;
       scoresEl.appendChild(card);

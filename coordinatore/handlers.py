@@ -233,13 +233,30 @@ async def cmd_score(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not s:
         return
     args = context.args or []
-    if len(args) < 2:
+    # Two forms:
+    #   /score <faction> <value>                  (single-resource faction)
+    #   /score <faction> <resource> <value>       (multi-resource faction)
+    if len(args) == 2:
+        faction_id, value_str = args[0], args[1]
+        resource_id: str | None = None
+    elif len(args) == 3:
+        faction_id, resource_id, value_str = args[0], args[1], args[2]
+    else:
         await update.effective_message.reply_text(
-            "Uso: `/score <fazione> <n>`", parse_mode=ParseMode.MARKDOWN
+            "Uso: `/score <fazione> <n>` (single-resource) "
+            "oppure `/score <fazione> <risorsa> <n>` (multi-resource)",
+            parse_mode=ParseMode.MARKDOWN,
         )
         return
     try:
-        s.set_score(args[0], int(args[1]))
+        value = int(value_str)
+    except ValueError:
+        await update.effective_message.reply_text(
+            f"❌ Il valore `{value_str}` non è un intero.", parse_mode=ParseMode.MARKDOWN
+        )
+        return
+    try:
+        s.set_score(faction_id, value, resource_id=resource_id)
     except (KeyError, ValueError) as exc:
         await update.effective_message.reply_text(f"❌ {exc}", parse_mode=ParseMode.MARKDOWN)
         return
