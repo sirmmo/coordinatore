@@ -1,0 +1,9 @@
+# Vercel's @vercel/python builder installs from this file inside the
+# function's lambda. Mirror of pyproject.toml runtime + serverless extras.
+python-telegram-bot[job-queue]>=21.0
+pydantic>=2.6
+pyyaml>=6.0
+fastapi>=0.115
+libsql-client>=0.4
+# Make the local package importable inside the lambda.
+-e ../

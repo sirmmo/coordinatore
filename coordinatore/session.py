@@ -12,7 +12,6 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from .config import GameConfig
-from .storage import Storage
 
 
 @dataclass
@@ -73,7 +72,9 @@ class Session:
             "log": self.log,
         }
 
-    def save(self, storage: Storage) -> None:
+    def save(self, storage: Any) -> None:
+        """Persist mutable state. ``storage`` is duck-typed: SqliteStorage or
+        LibSqlStorage both implement the same ``update_state`` method."""
         storage.update_state(self.id, self.to_state())
 
     # ---- mutators ----
@@ -137,7 +138,13 @@ class Session:
         return None
 
     def _record(self, kind: str, **payload: Any) -> None:
-        self.log.append({"t": time.time(), "kind": kind, **payload})
+        """Append an event to the session log.
+
+        Each entry gets a monotonic ``seq`` (per-session) and a ``t``
+        timestamp. The stream endpoints use ``seq`` for "give me everything
+        since X" cursors.
+        """
+        self.log.append({"seq": len(self.log), "t": time.time(), "kind": kind, **payload})
 
     def status_text(self) -> str:
         """A human-friendly status block to post back to the chat."""

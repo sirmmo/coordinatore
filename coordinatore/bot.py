@@ -9,12 +9,13 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from telegram.ext import Application, CommandHandler
 
 from . import handlers
 from .config import GameConfig, load_games_dir
-from .storage import Storage
+from .storage import make_storage
 
 log = logging.getLogger(__name__)
 
@@ -24,14 +25,19 @@ class BotContext:
     """Singleton dependencies passed to every handler via bot_data['ctx']."""
 
     games: dict[str, GameConfig]
-    storage: Storage
+    storage: Any  # SqliteStorage | LibSqlStorage — duck-typed
 
 
-def build_application(token: str, games_dir: Path, db_path: Path) -> Application:
+def build_application(
+    token: str,
+    games_dir: Path,
+    storage_url: str,
+    storage_auth_token: str | None = None,
+) -> Application:
     games = load_games_dir(games_dir)
     log.info("loaded %d game configs: %s", len(games), ", ".join(games))
 
-    storage = Storage(db_path)
+    storage = make_storage(storage_url, auth_token=storage_auth_token)
     ctx = BotContext(games=games, storage=storage)
 
     app = Application.builder().token(token).build()

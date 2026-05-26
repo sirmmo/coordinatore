@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Coordinatore — Pannello sessione</title>
+  <style>
+    :root {
+      --oro: #b8860b;
+      --bordoscuro: #7a5c1e;
+      --pergamena: #f5edd6;
+      --grigionote: #5a4a2a;
+      --testoscuro: #2a1f0a;
+      --rosso: #7b2d2d;
+      --verde: #2d5a2d;
+      --blu: #1b3a5c;
+      --marrone: #8b4513;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: "EB Garamond", Georgia, serif;
+      background: #fdfaf3;
+      color: var(--testoscuro);
+      margin: 0;
+      padding: 1.5rem;
+      max-width: 960px;
+      margin: 0 auto;
+    }
+    header {
+      border-bottom: 1px solid var(--oro);
+      padding-bottom: 0.5rem;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    header h1 {
+      margin: 0;
+      font-family: "Cinzel Decorative", Georgia, serif;
+      color: var(--oro);
+      font-weight: normal;
+      font-size: 1.8rem;
+      letter-spacing: 0.05em;
+    }
+    header .meta {
+      color: var(--grigionote);
+      font-style: italic;
+      font-size: 0.9rem;
+    }
+    .controls {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+    .controls input, .controls select, .controls button {
+      font: inherit;
+      padding: 0.35rem 0.6rem;
+      border: 1px solid var(--oro);
+      background: white;
+      color: var(--testoscuro);
+      border-radius: 3px;
+    }
+    .controls button {
+      background: var(--oro);
+      color: white;
+      cursor: pointer;
+    }
+    .status-pill {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      background: var(--pergamena);
+      color: var(--bordoscuro);
+      border: 1px solid var(--bordoscuro);
+    }
+    .status-pill.live { background: var(--verde); color: white; border-color: var(--verde); }
+    .status-pill.ended { background: var(--rosso); color: white; border-color: var(--rosso); }
+
+    section.scores {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 0.6rem;
+      margin-bottom: 1.5rem;
+    }
+    .faction {
+      border: 1px solid var(--oro);
+      border-radius: 3px;
+      padding: 0.6rem 0.8rem;
+      background: #fff;
+    }
+    .faction h3 {
+      margin: 0 0 0.3rem 0;
+      font-family: "Cinzel", Georgia, serif;
+      font-size: 0.9rem;
+      font-weight: bold;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--bordoscuro);
+    }
+    .faction .score {
+      font-size: 2rem;
+      font-weight: bold;
+      font-family: "Cinzel", Georgia, serif;
+      color: var(--oro);
+    }
+    .faction .max { color: var(--grigionote); font-size: 1rem; }
+    .faction .master { font-size: 0.8rem; color: var(--grigionote); font-style: italic; }
+
+    .totals {
+      background: var(--pergamena);
+      border: 1px solid var(--bordoscuro);
+      padding: 0.8rem 1rem;
+      margin-bottom: 1.5rem;
+      border-radius: 3px;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .totals .label { color: var(--grigionote); font-family: "Cinzel", Georgia, serif; }
+    .totals .value { font-size: 1.6rem; color: var(--oro); font-weight: bold; }
+    .totals .outcome { font-style: italic; color: var(--bordoscuro); }
+
+    h2 {
+      font-family: "Cinzel", Georgia, serif;
+      color: var(--oro);
+      font-size: 1rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border-bottom: 1px dotted var(--oro);
+      padding-bottom: 0.3rem;
+    }
+
+    ul.events {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      max-height: 60vh;
+      overflow-y: auto;
+      border: 1px solid var(--oro);
+      background: white;
+      border-radius: 3px;
+    }
+    ul.events li {
+      padding: 0.5rem 0.8rem;
+      border-bottom: 1px dotted var(--oro);
+      display: grid;
+      grid-template-columns: 80px 100px 1fr;
+      gap: 0.5rem;
+      align-items: baseline;
+      font-size: 0.9rem;
+    }
+    ul.events li:last-child { border-bottom: none; }
+    ul.events li.new { background: #fffbeb; animation: highlight 1.2s ease-out; }
+    @keyframes highlight {
+      from { background: #ffe89a; }
+      to { background: #fffbeb; }
+    }
+    ul.events .time { color: var(--grigionote); font-variant-numeric: tabular-nums; font-size: 0.8rem; }
+    ul.events .kind {
+      font-family: "Cinzel", Georgia, serif;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      color: var(--bordoscuro);
+      letter-spacing: 0.05em;
+    }
+    ul.events .payload code {
+      background: var(--pergamena);
+      padding: 0 0.3rem;
+      border-radius: 2px;
+    }
+
+    .empty {
+      padding: 2rem;
+      text-align: center;
+      color: var(--grigionote);
+      font-style: italic;
+    }
+    .err {
+      padding: 0.8rem;
+      background: #ffe9e9;
+      border: 1px solid var(--rosso);
+      color: var(--rosso);
+      border-radius: 3px;
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Coordinatore</h1>
+    <div class="meta">
+      <span id="game-name">— sessione non caricata —</span>
+      <span id="variant-label"></span>
+      <span class="status-pill" id="status">offline</span>
+    </div>
+  </header>
+
+  <div class="controls">
+    <label>chat_id:
+      <input id="chat-id" type="number" placeholder="es. -100123456" style="width: 12em" />
+    </label>
+    <label>filtra fazione:
+      <select id="faction-filter">
+        <option value="">tutte</option>
+      </select>
+    </label>
+    <button id="connect-btn">Connetti</button>
+    <span class="meta" id="conn-info"></span>
+  </div>
+
+  <div id="error" class="err" hidden></div>
+
+  <section class="scores" id="scores"></section>
+
+  <div class="totals">
+    <div><span class="label">Totale:</span> <span class="value" id="total">—</span> / <span id="max-total">—</span></div>
+    <div class="outcome" id="outcome"></div>
+  </div>
+
+  <h2>Eventi del tavolo</h2>
+  <ul class="events" id="events">
+    <li class="empty">Connettiti a una sessione per vedere lo stream live.</li>
+  </ul>
+
+<script>
+(() => {
+  let evtSource = null;
+  let state = null;
+  let lastSeq = -1;
+
+  const $ = (id) => document.getElementById(id);
+  const params = new URLSearchParams(location.search);
+  if (params.has("chat_id")) $("chat-id").value = params.get("chat_id");
+
+  $("connect-btn").addEventListener("click", connect);
+  $("chat-id").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") connect();
+  });
+  $("faction-filter").addEventListener("change", () => render(state));
+
+  async function connect() {
+    const chatId = $("chat-id").value.trim();
+    if (!chatId) return;
+    if (evtSource) evtSource.close();
+    $("error").hidden = true;
+    setStatus("connecting", "live");
+
+    try {
+      const r = await fetch(`/api/sessions/${chatId}`);
+      if (!r.ok) {
+        const err = await r.json().catch(() => ({ detail: r.statusText }));
+        showError(err.detail || r.statusText);
+        setStatus("offline", "");
+        return;
+      }
+      state = await r.json();
+      lastSeq = state.last_seq ?? -1;
+      populateFactionFilter(state);
+      render(state);
+      setStatus(state.status, state.status === "running" ? "live" : "");
+    } catch (e) {
+      showError(e.message);
+      setStatus("offline", "");
+      return;
+    }
+
+    evtSource = new EventSource(`/api/stream/${chatId}?since=${lastSeq}`);
+    evtSource.addEventListener("error", () => {
+      $("conn-info").textContent = "riconnessione…";
+    });
+    evtSource.addEventListener("open", () => {
+      $("conn-info").textContent = "stream attivo";
+    });
+    evtSource.addEventListener("ended", () => {
+      setStatus("ended", "ended");
+      evtSource.close();
+    });
+    evtSource.onmessage = handleEvent;
+    // Some browsers route named events differently; bind common kinds too.
+    ["start", "score", "moment", "join", "end"].forEach((k) =>
+      evtSource.addEventListener(k, handleEvent)
+    );
+  }
+
+  async function handleEvent(ev) {
+    let data;
+    try { data = JSON.parse(ev.data); } catch { return; }
+    if (data.error) {
+      showError(data.error);
+      return;
+    }
+    if (typeof data.seq === "number") lastSeq = Math.max(lastSeq, data.seq);
+    // Refresh full state when a score-changing event arrives.
+    if (["score", "start", "end"].includes(data.kind)) {
+      try {
+        const r = await fetch(`/api/sessions/${$("chat-id").value.trim()}`);
+        if (r.ok) state = await r.json();
+      } catch {}
+    } else if (state) {
+      state.events.push(data);
+    }
+    render(state);
+  }
+
+  function populateFactionFilter(st) {
+    const sel = $("faction-filter");
+    sel.innerHTML = '<option value="">tutte</option>';
+    for (const f of st.variant.active_factions) {
+      const opt = document.createElement("option");
+      opt.value = f.id;
+      opt.textContent = f.label;
+      sel.appendChild(opt);
+    }
+  }
+
+  function render(st) {
+    if (!st) return;
+    $("game-name").textContent = st.game.name;
+    $("variant-label").textContent = `— ${st.variant.label}`;
+    $("total").textContent = st.total;
+    $("max-total").textContent = st.max_total;
+    $("outcome").textContent = st.outcome ? `→ ${st.outcome}` : "";
+
+    const scoresEl = $("scores");
+    scoresEl.innerHTML = "";
+    for (const f of st.variant.active_factions) {
+      const master = st.masters.find((m) => m.faction_id === f.id);
+      const score = st.scores[f.id] ?? 0;
+      const card = document.createElement("div");
+      card.className = "faction";
+      card.innerHTML = `
+        <h3>${escapeHtml(f.label)}</h3>
+        <div><span class="score">${score}</span><span class="max"> / 4</span></div>
+        <div class="master">${master ? "@" + escapeHtml(master.username) : "—"}</div>
+      `;
+      scoresEl.appendChild(card);
+    }
+
+    const filterFaction = $("faction-filter").value;
+    const events = (st.events || []).filter((e) => {
+      if (!filterFaction) return true;
+      return !e.faction || e.faction === filterFaction;
+    });
+    const eventsEl = $("events");
+    eventsEl.innerHTML = "";
+    if (events.length === 0) {
+      eventsEl.innerHTML = '<li class="empty">Nessun evento.</li>';
+      return;
+    }
+    for (const e of events.slice().reverse()) {
+      const li = document.createElement("li");
+      li.className = e.seq === lastSeq ? "new" : "";
+      const t = new Date((e.t || 0) * 1000);
+      const time = t.toLocaleTimeString();
+      li.innerHTML = `
+        <span class="time">${time}</span>
+        <span class="kind">${escapeHtml(e.kind || "?")}</span>
+        <span class="payload">${formatPayload(e)}</span>
+      `;
+      eventsEl.appendChild(li);
+    }
+  }
+
+  function formatPayload(e) {
+    const skip = new Set(["t", "seq", "kind"]);
+    const parts = [];
+    for (const [k, v] of Object.entries(e)) {
+      if (skip.has(k)) continue;
+      parts.push(`${k}=<code>${escapeHtml(String(v))}</code>`);
+    }
+    return parts.join(" ");
+  }
+
+  function setStatus(text, cls) {
+    const el = $("status");
+    el.textContent = text;
+    el.className = "status-pill" + (cls ? " " + cls : "");
+  }
+
+  function showError(msg) {
+    const el = $("error");
+    el.textContent = msg;
+    el.hidden = false;
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+})();
+</script>
+</body>
+</html>

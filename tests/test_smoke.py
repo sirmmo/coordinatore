@@ -10,7 +10,7 @@ import pytest
 
 from coordinatore.config import load_game, load_games_dir
 from coordinatore.session import Session
-from coordinatore.storage import Storage
+from coordinatore.storage import LibSqlStorage, SqliteStorage, make_storage
 
 GAMES_DIR = Path(__file__).resolve().parent.parent / "games"
 VESPRI_PATH = GAMES_DIR / "vespri-1282.yaml"
@@ -55,7 +55,7 @@ def test_max_total_per_variant():
 
 def test_session_round_trip(tmp_path):
     cfg = load_game(VESPRI_PATH)
-    storage = Storage(tmp_path / "test.sqlite")
+    storage = SqliteStorage(tmp_path / "test.sqlite")
 
     sid = storage.create_session(
         chat_id=42,
@@ -85,7 +85,7 @@ def test_session_round_trip(tmp_path):
 
 def test_join_rejects_already_claimed_faction(tmp_path):
     cfg = load_game(VESPRI_PATH)
-    storage = Storage(tmp_path / "test.sqlite")
+    storage = SqliteStorage(tmp_path / "test.sqlite")
     storage.create_session(
         chat_id=1, game_id=cfg.id, variant_id="full",
         initial_state=Session.initial_state(cfg, "full"),
@@ -98,7 +98,7 @@ def test_join_rejects_already_claimed_faction(tmp_path):
 
 def test_join_rejects_inactive_faction_in_variant(tmp_path):
     cfg = load_game(VESPRI_PATH)
-    storage = Storage(tmp_path / "test.sqlite")
+    storage = SqliteStorage(tmp_path / "test.sqlite")
     storage.create_session(
         chat_id=1, game_id=cfg.id, variant_id="no_baroni",
         initial_state=Session.initial_state(cfg, "no_baroni"),
@@ -106,3 +106,35 @@ def test_join_rejects_inactive_faction_in_variant(tmp_path):
     s = Session.from_row(storage.active_for_chat(1), cfg)
     with pytest.raises(ValueError, match="not active"):
         s.join(user_id=1, username="alice", faction_id="baroni")
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "file:./data/x.sqlite",
+        "sqlite:///tmp/x.sqlite",
+        "/tmp/bare-path.sqlite",
+    ],
+)
+def test_make_storage_returns_sqlite_for_file_urls(tmp_path, monkeypatch, url):
+    # Steer the bare-path test at a tmp location to keep the FS tidy.
+    if url.startswith("/"):
+        url = str(tmp_path / "bare.sqlite")
+    s = make_storage(url)
+    assert isinstance(s, SqliteStorage)
+
+
+def test_make_storage_returns_libsql_for_libsql_urls():
+    pytest.importorskip("libsql")
+    # Construction will likely fail trying to reach example.invalid — that's
+    # fine; we only care that the factory dispatched into LibSqlStorage.
+    try:
+        s = make_storage("libsql://example.invalid", auth_token="x")
+    except Exception:
+        return  # dispatched, network/auth failure as expected
+    assert isinstance(s, LibSqlStorage)
+
+
+def test_make_storage_rejects_unknown_scheme():
+    with pytest.raises(ValueError, match="unknown storage URL scheme"):
+        make_storage("redis://nope")

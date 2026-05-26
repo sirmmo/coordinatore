@@ -14,6 +14,11 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0", "ruff>=0.5"]
+# Serverless deploy (Vercel + Turso): webhook endpoint + libsql backend.
+serverless = [
+  "fastapi>=0.115",
+  "libsql>=0.1",
+]
 
 [project.scripts]
 coordinatore = "coordinatore.__main__:main"
