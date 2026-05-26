@@ -83,7 +83,9 @@ class Session:
             self.config.faction(faction_id)  # raises if unknown
             variant = self.config.variant(self.variant_id)
             if faction_id not in variant.active_factions:
-                raise ValueError(f"faction {faction_id!r} is not active in variant {self.variant_id!r}")
+                raise ValueError(
+                    f"faction {faction_id!r} not active in variant {self.variant_id!r}"
+                )
             existing = self._master_for_faction(faction_id)
             if existing and existing.user_id != user_id:
                 raise ValueError(
@@ -123,7 +125,8 @@ class Session:
 
     def end(self) -> None:
         self.status = "ended"
-        self._record("end", total=self.total(), outcome=self.outcome().label if self.outcome() else None)
+        outcome = self.outcome()
+        self._record("end", total=self.total(), outcome=outcome.label if outcome else None)
 
     # ---- helpers ----
 

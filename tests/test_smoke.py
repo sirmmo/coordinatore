@@ -12,7 +12,6 @@ from coordinatore.config import load_game, load_games_dir
 from coordinatore.session import Session
 from coordinatore.storage import Storage
 
-
 GAMES_DIR = Path(__file__).resolve().parent.parent / "games"
 VESPRI_PATH = GAMES_DIR / "vespri-1282.yaml"
 
@@ -87,7 +86,7 @@ def test_session_round_trip(tmp_path):
 def test_join_rejects_already_claimed_faction(tmp_path):
     cfg = load_game(VESPRI_PATH)
     storage = Storage(tmp_path / "test.sqlite")
-    sid = storage.create_session(
+    storage.create_session(
         chat_id=1, game_id=cfg.id, variant_id="full",
         initial_state=Session.initial_state(cfg, "full"),
     )

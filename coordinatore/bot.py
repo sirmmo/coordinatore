@@ -59,5 +59,9 @@ def build_application(token: str, games_dir: Path, db_path: Path) -> Application
     for name in sorted(custom_names):
         app.add_handler(CommandHandler(name, handlers.cmd_custom))
 
-    log.info("registered %d custom commands: %s", len(custom_names), ", ".join(sorted(custom_names)))
+    log.info(
+        "registered %d custom commands: %s",
+        len(custom_names),
+        ", ".join(sorted(custom_names)),
+    )
     return app

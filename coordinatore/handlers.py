@@ -29,7 +29,7 @@ log = logging.getLogger(__name__)
 
 # ---------- helpers ----------
 
-def _bot_ctx(context: ContextTypes.DEFAULT_TYPE) -> "BotContext":
+def _bot_ctx(context: ContextTypes.DEFAULT_TYPE) -> BotContext:
     """Pull the BotContext singleton out of the application's bot_data dict."""
     return context.application.bot_data["ctx"]
 
@@ -146,7 +146,7 @@ async def cmd_open(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     chat = update.effective_chat
     if bctx.storage.active_for_chat(chat.id):
         await update.effective_message.reply_text(
-            "⚠️ Una sessione è già attiva in questa chat. Chiudila con `/end` prima di aprirne un'altra.",
+            "⚠️ Una sessione è già attiva. Chiudila con `/end` prima di aprirne un'altra.",
             parse_mode=ParseMode.MARKDOWN,
         )
         return
@@ -158,10 +158,13 @@ async def cmd_open(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         initial_state=Session.initial_state(config, variant_id),
     )
     variant = config.variant(variant_id)
+    faction_labels = ", ".join(
+        config.faction(fid).label for fid in variant.active_factions
+    )
     msg = (
         f"📜 Sessione aperta: *{config.name}* — _{variant.label}_\n\n"
         f"{variant.description or ''}\n\n"
-        f"Fazioni attive: {', '.join(config.faction(fid).label for fid in variant.active_factions)}\n\n"
+        f"Fazioni attive: {faction_labels}\n\n"
         f"I master entrino con `/join <fazione>`. Quando siete tutti, `/begin`."
     )
     await update.effective_message.reply_text(msg, parse_mode=ParseMode.MARKDOWN)
@@ -188,7 +191,7 @@ async def cmd_join(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         )
     else:
         await update.effective_message.reply_text(
-            f"✅ @{handle} è entrato (nessuna fazione assegnata — usa `/join <fazione>` per claimarne una).",
+            f"✅ @{handle} è entrato. Usa `/join <fazione>` per claimarne una.",
             parse_mode=ParseMode.MARKDOWN,
         )
 
@@ -205,7 +208,6 @@ async def cmd_begin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     s.start()
     s.save(_bot_ctx(context).storage)
     _bot_ctx(context).storage.mark_started(s.id)
-    variant = s.config.variant(s.variant_id)
     msg = [
         f"🔔 *La sessione inizia.* — _{s.config.name}_",
         "",
