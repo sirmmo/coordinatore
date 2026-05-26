@@ -1,0 +1,106 @@
+# =============================================================
+# Vespri 1282 — game config for the coordinatore bot.
+# Source manual: https://github.com/sirmmo/palermo_1282
+# =============================================================
+
+id: vespri-1282
+name: "Vespri 1282"
+language: it
+description: >
+  One-shot Forged in the Dark ambientato a Palermo, febbraio–marzo 1282.
+  3–4 tavoli, 24–32 giocatori, ~3h45 di gioco.
+
+factions:
+  - id: congiurati
+    label: "I Congiurati"
+    score_min: 0
+    score_max: 4
+  - id: baroni
+    label: "I Baroni Siciliani"
+    score_min: 0
+    score_max: 4
+  - id: clero
+    label: "Il Clero"
+    score_min: 0
+    score_max: 4
+  - id: popolo
+    label: "Il Popolo"
+    score_min: 0
+    score_max: 4
+
+variants:
+  - id: full
+    label: "4 tavoli (canonico)"
+    active_factions: [congiurati, baroni, clero, popolo]
+    description: "Configurazione canonica. Punteggio 0–16."
+  - id: no_baroni
+    label: "3 tavoli — senza Baroni"
+    active_factions: [congiurati, clero, popolo]
+    description: "Lettura mista: la cospirazione è in scena, la nobiltà è pressione fuori scena."
+  - id: no_congiurati
+    label: "3 tavoli — senza Congiurati (Abulafia)"
+    active_factions: [baroni, clero, popolo]
+    description: "Lettura di Abulafia: niente cospirazione organizzata in scena, solo società al limite."
+
+outcomes:
+  full:
+    - { min: 0,  max: 4,  label: "La Notte del Silenzio", description: "Fallimento della cospirazione" }
+    - { min: 5,  max: 8,  label: "La Scintilla Spenta",   description: "Rivolta parziale e repressa" }
+    - { min: 9,  max: 12, label: "Il Vespro",             description: "Rivolta completa" }
+    - { min: 13, max: 16, label: "L'Insurrezione",        description: "Rivolta totale e coordinata" }
+  no_baroni:
+    - { min: 0,  max: 3,  label: "La Notte del Silenzio" }
+    - { min: 4,  max: 6,  label: "La Scintilla Spenta" }
+    - { min: 7,  max: 9,  label: "Il Vespro" }
+    - { min: 10, max: 12, label: "L'Insurrezione" }
+  no_congiurati:
+    - { min: 0,  max: 3,  label: "La Notte del Silenzio" }
+    - { min: 4,  max: 6,  label: "La Scintilla Spenta" }
+    - { min: 7,  max: 9,  label: "Il Vespro" }
+    - { min: 10, max: 12, label: "L'Insurrezione" }
+
+moments:
+  - id: voce
+    label: "La Voce"
+    suggested_minute: 45
+    description: "Una notizia che cambia il quadro."
+    per_faction_text:
+      congiurati: "Una vostra fonte non risponde più. Qualcuno ha taciuto, o qualcuno ha parlato."
+      baroni: "Una casata che credevate ferma ha cambiato posizione. La rete dei vassalli vibra."
+      clero: "Una lettera privata da Roma è arrivata in cattedrale. Non è un buon segno."
+      popolo: "Al mercato gira la voce di nuove tasse. La gente non parla d'altro."
+
+  - id: crisi
+    label: "La Crisi"
+    suggested_minute: 90
+    description: "Un deposito d'armi angioino è stato scoperto. Qualcosa va storto a scala cittadina."
+    per_faction_text:
+      congiurati: "Un vostro nodo è bruciato. Chi ha parlato? E quanto sapeva?"
+      baroni: "La prova che la cosa è seria. Adesso o mai più — e ogni casata lo sa."
+      clero: "I francesi cercheranno un capro espiatorio nei conventi. Mettete al sicuro ciò che nascondete."
+      popolo: "Pattuglie raddoppiate nei quartieri. Stasera si torna a casa col coprifuoco."
+
+  - id: campane
+    label: "Le Campane"
+    suggested_minute: 150
+    description: "La processione di Santo Spirito sta per cominciare. Da qui in avanti non si torna indietro."
+    per_faction_text:
+      congiurati: "È il momento. Il segnale parte ora, o non parte mai."
+      baroni: "Le vostre case sapranno scegliere stanotte. O lo sapranno per voi."
+      clero: "Le campane di Santo Spirito stanno per suonare. La domanda è da chi."
+      popolo: "Siete tutti in piazza. Cosa succede dipende da voi, e nessuno scriverà i vostri nomi."
+
+custom_commands:
+  - command: legare
+    label: "Legare (Clero, 2 Passione)"
+    description: >
+      Il Clero forgia una nuova Connessione fra altri due personaggi.
+      I legati non possono rifiutare, ma scelgono la natura del legame.
+      Richiede una scena di finzione: confessione, benedizione, matrimonio.
+
+  - command: sciogliere
+    label: "Sciogliere (Clero, 3 Passione)"
+    description: >
+      Il Clero spezza una Connessione esistente fra altri due personaggi.
+      Conta come rottura: entrambi i legati guadagnano 3 Passione.
+      Richiede una scena: scomunica, verità rivelata, segreto svelato.

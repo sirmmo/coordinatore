@@ -1,0 +1,33 @@
+[project]
+name = "coordinatore"
+version = "0.1.0"
+description = "Telegram bot that runs the shared/coordination layer for multi-table tabletop sessions. Game rules live in YAML config files, so one bot deployment can serve many concurrent sessions of different games."
+authors = [{name = "Marco Montanari", email = "marco.montanari@gmail.com"}]
+license = {text = "AGPL-3.0-or-later"}
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "python-telegram-bot[job-queue]>=21.0",
+  "pydantic>=2.6",
+  "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "ruff>=0.5"]
+
+[project.scripts]
+coordinatore = "coordinatore.__main__:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["coordinatore"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]

@@ -1,0 +1,47 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        run: pip install -e ".[dev]"
+
+      - name: Lint
+        run: ruff check coordinatore tests
+
+      - name: Test
+        run: pytest -v
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build production image
+        run: docker build -t coordinatore:ci .
+
+      - name: Smoke-test the image
+        run: |
+          # Entrypoint shows help with --help; fails fast without a token.
+          docker run --rm coordinatore:ci --help
+          if docker run --rm coordinatore:ci 2>&1 | grep -q "TELEGRAM_BOT_TOKEN is required"; then
+            echo "✅ entrypoint refuses startup without token, as expected"
+          else
+            echo "❌ entrypoint did not enforce token requirement"
+            exit 1
+          fi
