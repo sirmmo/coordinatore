@@ -1,0 +1,142 @@
+# =============================================================
+# Genova 1507 — game config for the coordinatore bot.
+# Source manual: https://github.com/sirmmo/genova-1507
+# Setting: la rivolta genovese del 1507 contro Luigi XII e Trivulzio.
+# =============================================================
+#
+# Differenza strutturale rispetto a Vespri 1282:
+#   - Vespri ha 4 fazioni con punteggi indipendenti 0-4 e un totale 0-16
+#     come misura dell'esito.
+#   - Genova ha un solo CLOCK CONDIVISO 0-8 ("Controllo di Genova")
+#     che tutte le casate alimentano (o sabotano).
+#
+# Mappatura nel modello a fazioni del bot:
+#   - 4 casate (factions), score 0-2 ciascuna.
+#   - Il totale 0-8 coincide col valore del clock condiviso.
+#   - Le bande di esito sono i segmenti del clock.
+
+id: genova-1507
+name: "Genova 1507"
+language: it
+description: >
+  One-shot Forged in the Dark ambientato a Genova nel 1507, durante la
+  rivolta anti-francese contro il governatore Gian Giacomo Trivulzio.
+  4 tavoli (le quattro casate), 16-20 giocatori, ~3h di gioco.
+  Le casate alimentano un clock condiviso a 8 segmenti.
+
+factions:
+  - id: doria
+    label: "Casa Doria"
+    score_min: 0
+    score_max: 2
+  - id: spinola
+    label: "Casa Spinola"
+    score_min: 0
+    score_max: 2
+  - id: fieschi
+    label: "Casa Fieschi"
+    score_min: 0
+    score_max: 2
+  - id: grimaldi
+    label: "Casa Grimaldi"
+    score_min: 0
+    score_max: 2
+
+variants:
+  - id: full
+    label: "4 casate (canonico)"
+    active_factions: [doria, spinola, fieschi, grimaldi]
+    description: "Configurazione canonica del manuale. Clock 0-8."
+
+# Bande di esito = segmenti del clock «Controllo di Genova»:
+#   1-2  La Francia tiene
+#   3-4  La rivolta fermenta
+#   5-6  Genova in fiamme
+#   7    Il governatore francese fugge
+#   8    GENOVA È LIBERA
+outcomes:
+  full:
+    - { min: 0, max: 2, label: "La Francia tiene",
+        description: "I francesi sono saldi. Le casate si muovono nell'ombra, ma niente esplode." }
+    - { min: 3, max: 4, label: "La rivolta fermenta",
+        description: "I francesi sospettano. Il Colpo Globale è ora attivabile." }
+    - { min: 5, max: 6, label: "Genova in fiamme",
+        description: "I quartieri scelgono i campioni. Combattimento aperto." }
+    - { min: 7, max: 7, label: "Il governatore fugge",
+        description: "Trivulzio chiede rinforzi o lascia la città." }
+    - { min: 8, max: 8, label: "GENOVA È LIBERA",
+        description: "La rivolta ha vinto la notte. Resta la domanda: chi governa adesso?" }
+
+moments:
+  - id: attivazione_globale
+    label: "Il Colpo Globale è ora attivabile"
+    suggested_minute: 60
+    description: >
+      Il clock ha raggiunto (o si sta avvicinando a) 4 segmenti.
+      «La Notte dei Vespri Genovesi» è disponibile per tutti i tavoli:
+      far suonare le campane di San Lorenzo al segnale concordato.
+    per_faction_text:
+      doria: "I vostri agenti al porto possono coordinare i segnali navali."
+      spinola: "Le vostre reti bancarie possono finanziare l'esca per attirare i francesi."
+      fieschi: "Il vescovo ausiliare Gregorio può autorizzare il suono delle campane."
+      grimaldi: "Le vostre guarnigioni hanno la disciplina per tenere le mura."
+
+  - id: prima_perdita
+    label: "Prima perdita francese"
+    suggested_minute: 120
+    description: >
+      Qualcosa di grosso è successo: una guarnigione francese annientata,
+      un quartiere liberato, un alto funzionario ucciso o catturato.
+      I francesi reagiscono ovunque: pattuglie raddoppiate, arresti
+      preventivi, ostaggi. Da qui in avanti il rischio cresce per tutti.
+    per_faction_text:
+      doria: "La flotta francese ha bloccato il porto. I vostri commerci sono fermi."
+      spinola: "I banchi francesi a Genova hanno chiesto il rientro dei prestiti."
+      fieschi: "Un canonico filo-francese è scomparso. Sospettano voi."
+      grimaldi: "Il governatore vi convoca personalmente. Una scelta non più rimandabile."
+
+  - id: vespri_genovesi
+    label: "Le campane di San Lorenzo"
+    suggested_minute: 150
+    description: >
+      È il momento. Le campane di San Lorenzo stanno per suonare, o non
+      suoneranno mai. Quello che fate ora decide se Genova è libera
+      all'alba o se la rivolta è solo un'altra storia per i posteri.
+    per_faction_text:
+      doria: "Le vostre navi sono pronte. Solo voi sapete chi fugge e chi resta."
+      spinola: "I libri contabili sono distrutti o salvati. Decidete adesso quali."
+      fieschi: "Il vescovo apre la cattedrale, o la chiude. Suonano le campane, o tacciono."
+      grimaldi: "Le vostre guarnigioni difendono Genova, o aprono le porte ai francesi."
+
+custom_commands:
+  - command: colpo_riservato
+    label: "Colpo Riservato (+2 al clock)"
+    description: >
+      Una casata esegue il proprio Colpo Riservato: una missione esclusiva,
+      definita dal manuale per ciascuna delle quattro famiglie.
+      Successo pieno: +2 al clock condiviso (ricorda al GM coordinatore
+      di aggiornare il punteggio della casata di +2 con /score).
+
+  - command: colpo_globale
+    label: "Colpo Globale — La Notte dei Vespri Genovesi"
+    description: >
+      Disponibile per tutti quando il clock è ≥ 4. Ogni tavolo esegue
+      il proprio ruolo nello stesso piano: far suonare le campane di
+      San Lorenzo. Conta i successi a fine fase:
+      3+ successi = +3 al clock; 2 = +1; ≤1 = -1.
+
+  - command: interferenza
+    label: "Interferenza fra casate (una volta per sessione)"
+    description: >
+      Una casata tenta di ostacolare il Colpo di un'altra casata.
+      Una sola volta per sessione per casata. Il tavolo interferente
+      tira Intrigo o Forza; il tavolo bersaglio contrappone Attenzione.
+      Successo pieno: il Colpo bersaglio perde un segmento o una Risorsa.
+
+  - command: tradimento
+    label: "Tradimento ai francesi (-2 al clock)"
+    description: >
+      Una casata sceglie di vendere la rivolta al governatore francese.
+      Conseguenza meccanica: -2 al clock condiviso. Conseguenza narrativa:
+      la casata traditrice ha protezione francese, ma è bruciata con
+      tutte le altre casate per il resto della sessione (e oltre).

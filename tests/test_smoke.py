@@ -27,6 +27,24 @@ def test_vespri_config_loads():
 def test_all_games_load():
     games = load_games_dir(GAMES_DIR)
     assert "vespri-1282" in games
+    assert "genova-1507" in games
+
+
+def test_genova_config():
+    cfg = load_game(GAMES_DIR / "genova-1507.yaml")
+    assert cfg.id == "genova-1507"
+    # Four casate, each contributing up to 2 to the shared clock (total = 0..8).
+    assert {f.id for f in cfg.factions} == {"doria", "spinola", "fieschi", "grimaldi"}
+    assert cfg.max_total("full") == 8
+    # Outcome at 4 (clock segment 4) should land on "La rivolta fermenta".
+    assert cfg.outcome_for("full", 4).label == "La rivolta fermenta"
+    # Outcome at 8 (full clock) = freedom.
+    assert cfg.outcome_for("full", 8).label == "GENOVA È LIBERA"
+    # Custom commands present.
+    custom = {c.command for c in cfg.custom_commands}
+    assert "colpo_riservato" in custom
+    assert "colpo_globale" in custom
+    assert "interferenza" in custom
 
 
 def test_outcome_bands_full():
